@@ -6,6 +6,12 @@ __pycache__/
 # C extensions
 *.so
 
+# UI Python Script
+ui/form_ui.py
+
+# Hidden files
+*._*
+
 # Distribution / packaging
 .Python
 build/
