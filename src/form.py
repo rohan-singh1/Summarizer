@@ -4,12 +4,17 @@ from pathlib import Path
 from PySide6.QtWidgets import (
     QWidget,
 )
-from PySide6.QtCore import QFile
+from PySide6.QtCore import QFile, QPoint, Qt
 from PySide6.QtUiTools import QUiLoader
+from PySide6.QtGui import QPixmap, QPainter
+import matplotlib.pyplot as plt
 
 
 class MainWidget(QWidget):
     def __init__(self):
+        self.apple_mention_count = 0
+        self.meta_mention_count = 0
+        self.sony_mention_count = 0
         super(MainWidget, self).__init__()
         MainWidget.win = self.load_ui()
 
@@ -24,7 +29,7 @@ class MainWidget(QWidget):
         for word in words:
             if word.isdigit():
                 return word  # Return the number if found
-        return None  # Return None if no number is found
+        return "0"  # Return None if no number is found
 
     def load_ui(self):
         loader = QUiLoader()
@@ -48,16 +53,20 @@ class MainWidget(QWidget):
         sony_text = self.win.sony_text_box.toPlainText()
 
         # Get mention counts
-        apple_mention_count = self.get_device_mention_count(apple_text, "vision pro")
-        meta_mention_count = self.get_device_mention_count(meta_text, "quest")
-        sony_mention_count = self.get_device_mention_count(sony_text, "vr2")
+        self.apple_mention_count = self.get_device_mention_count(
+            apple_text, "vision pro"
+        )
+        self.meta_mention_count = self.get_device_mention_count(meta_text, "quest")
+        self.sony_mention_count = self.get_device_mention_count(sony_text, "vr2")
 
         # Set the summary to the result label
         self.win.result_label.setText(
-            f"{apple_mention_count}, {meta_mention_count}, {sony_mention_count}"
+            f"{self.apple_mention_count}, {self.meta_mention_count}, {self.sony_mention_count}"
         )
 
         self.win.stacked_widget.setCurrentIndex(1)
+        self.plot_chart()
+        self.load_chart()
 
     def handle_back_button_clicked(self):
         self.win.stacked_widget.setCurrentIndex(0)
@@ -108,3 +117,48 @@ class MainWidget(QWidget):
 
         count = completion.choices[0].message.content
         return self.get_number_in_sentence(count)
+
+    def plot_chart(self):
+        # Device names
+        devices = ["Meta Quest 2", "Apple Vision Pro", "Sony PS VR2"]
+
+        # Corresponding device mention count for each device
+        numbers = [
+            int(self.meta_mention_count),
+            int(self.apple_mention_count),
+            int(self.sony_mention_count),
+        ]
+
+        # Specifying chart colors
+        color_red = (1, 0.5, 0.5)
+        color_green = (0.5, 1, 0.5)
+        color_blue = (0.5, 0.5, 1)
+
+        # Creating the bar chart
+        fig, ax = plt.subplots(figsize=(6.2, 4))
+
+        plt.bar(devices, numbers, color=[color_red, color_green, color_blue])
+
+        # Adjusting the y-axis range to be slightly beyond the min and max values
+        buffer = 5
+        y_min = 0
+        y_max = max(numbers) + buffer
+        plt.ylim(y_min, y_max)
+
+        # Adding titles and labels
+        plt.title("Device Mention Counts")
+        plt.xlabel("Device")
+        plt.ylabel("Count")
+
+        plt.savefig("../assets/comparison_plot.png")
+
+    def load_chart(self):
+        # Load the PNG image into a pixmap object
+        pixmap = QPixmap("../assets/comparison_plot.png")
+        self.win.result_label.setPixmap(
+            pixmap.scaled(
+                self.win.result_label.size(),
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation,
+            )
+        )

@@ -9,7 +9,7 @@ WINDOW_HEIGHT = 600
 if __name__ == "__main__":
     app = QApplication([])
     widget = MainWidget()
-    widget.setWindowTitle("Summarizer")
+    widget.setWindowTitle("Compare")
     widget.setFixedSize(QSize(WINDOW_WIDTH, WINDOW_HEIGHT))
     widget.show()
     sys.exit(app.exec())
