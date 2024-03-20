@@ -13,6 +13,19 @@ class MainWidget(QWidget):
         super(MainWidget, self).__init__()
         MainWidget.win = self.load_ui()
 
+    def get_number_in_sentence(self, sentence):
+        """
+        Extract the number from the provided sentence
+        """
+        # Split the sentence into words
+        words = sentence.split()
+
+        # Check each word to see if it's a number
+        for word in words:
+            if word.isdigit():
+                return word  # Return the number if found
+        return None  # Return None if no number is found
+
     def load_ui(self):
         loader = QUiLoader()
         path = os.fspath(Path(__file__).resolve().parent / "../ui/form.ui")
@@ -28,14 +41,21 @@ class MainWidget(QWidget):
 
     def handle_summarize_button_clicked(self):
         """
-        Handle the summarize button clicked event.
+        Handle the Compare button clicked event.
         """
-        privacy_policy_content = self.win.text_box.toPlainText()
+        apple_text = self.win.apple_text_box.toPlainText()
+        meta_text = self.win.meta_text_box.toPlainText()
+        sony_text = self.win.sony_text_box.toPlainText()
 
-        mention_count = self.get_device_mention_count(privacy_policy_content)
+        # Get mention counts
+        apple_mention_count = self.get_device_mention_count(apple_text, "vision pro")
+        meta_mention_count = self.get_device_mention_count(meta_text, "quest")
+        sony_mention_count = self.get_device_mention_count(sony_text, "vr2")
 
         # Set the summary to the result label
-        self.win.result_label.setText(mention_count)
+        self.win.result_label.setText(
+            f"{apple_mention_count}, {meta_mention_count}, {sony_mention_count}"
+        )
 
         self.win.stacked_widget.setCurrentIndex(1)
 
@@ -65,9 +85,9 @@ class MainWidget(QWidget):
         summary = completion.choices[0].message.content
         return summary
 
-    def get_device_mention_count(self, text_content):
+    def get_device_mention_count(self, text_content, device):
         """
-        Get the numbe of times the device was mentioned in the
+        Get the number of times the device was mentioned in the
         provided text using the OpenAI API.
         """
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -80,11 +100,11 @@ class MainWidget(QWidget):
                 },
                 {
                     "role": "user",
-                    "content": f"{text_content}\nPlease tell me the number of times the name of the device has been explicitly or implicity been mentioned, your answer should be just a single integer and nothing else. I repeat, your answer should be just one word, which is the number.",
+                    "content": f'{text_content}\nPlease tell me the number of times the string "{device} has been explicitly or implicity been mentioned, your answer should be just a single integer and nothing else. I repeat, your answer should be just one word, which is the number.',
                 },
             ],
             model="gpt-3.5-turbo-1106",
         )
 
         count = completion.choices[0].message.content
-        return count
+        return self.get_number_in_sentence(count)
